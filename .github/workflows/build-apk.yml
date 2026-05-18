@@ -21,6 +21,11 @@ jobs:
           distribution: temurin
           java-version: 11
 
+      - name: Create local.properties
+        run: |
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
+          cat local.properties
+
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
@@ -31,10 +36,21 @@ jobs:
         run: ./gradlew clean :app:assembleNormalRelease --no-daemon
 
       - name: List APK files
-        run: find app/build/outputs/apk -name "*.apk" -type f -print
+        if: always()
+        run: |
+          echo "===== APK FILES ====="
+          find . -name "*.apk" -type f -print || true
+
+      - name: Collect APK files
+        if: success()
+        run: |
+          mkdir -p apk-output
+          find . -name "*.apk" -type f -exec cp {} apk-output/ \;
+          ls -lh apk-output
 
       - name: Upload APK artifact
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: TVBoxOS-XiaomiBox-APK
-          path: app/build/outputs/apk/**/*.apk
+          path: apk-output/*.apk
